@@ -1,5 +1,5 @@
 # StarCraft Reinforcement Learning Project
 
-Author: R. Ghorayeb, L. Mutricy, R. Rouvillois, O. Yates
+Authors: R. Ghorayeb, L. Mutricy, R. Rouvillois, O. Yates
 
 
