@@ -1,3 +1,14 @@
+####MOVE 2 Beacon example
+
+# run 
+#python -m pysc2.bin.agent --map MoveToBeacon --agent move2beacon.Agent1  for a random agent 
+# and
+# python -m pysc2.bin.agent --map MoveToBeacon --agent move2beacon.Agent2  for a simple bot 
+
+####
+
+
+
 import numpy as np
 from pysc2.agents import base_agent
 from pysc2.lib import actions
@@ -72,3 +83,40 @@ class Agent2(base_agent.BaseAgent):
             return actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, target])
         else:
             return actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
+#%%
+##### deep Q learning
+def deepmind_basic_model(input, actions):
+    model = Sequential()
+    # Define CNN model
+    #print(input)
+    model.add(Conv2D(64, kernel_size=(5, 5), input_shape=input))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None))
+    model.add(Dropout(0.3))
+    model.add(Conv2D(128, kernel_size=(3, 3), input_shape=input))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None))
+    model.add(Dropout(0.3))
+    model.add(Conv2D(256, kernel_size=(3, 3)))
+    model.add(Activation('relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format=None))
+    model.add(Dropout(0.3))
+    model.add(Flatten())
+    model.add(Dense(256, activation='relu'))
+    model.add(Reshape((1, 256)))
+    # Add some memory
+    model.add(LSTM(256))
+    model.add(Dense(actions, activation='softmax'))
+    model.summary()
+    model.compile(loss="categorical_crossentropy",
+                  optimizer="adam",
+                  metrics=["accuracy"])
+    return model
+#%%
+with sc2_env.SC2Env(agent_race=None,
+                    bot_race=None,
+                    difficulty=None,
+                    map_name=beacon_map,
+                    visualize=False) as env:
+    obs=env.reset()
+   
