@@ -46,14 +46,14 @@ def get_eps_threshold(steps_done):
     return EPS_END + (EPS_START - EPS_END) * math.exp(-1. * steps_done / EPS_DECAY)
 
 def get_state(obs):
-    ai_view = obs.observation['screen'][_AI_RELATIVE]
+    ai_view = obs.observation['feature_screen'][_AI_RELATIVE]
     beaconxs, beaconys = (ai_view == _AI_NEUTRAL).nonzero()
     marinexs, marineys = (ai_view == _AI_SELF).nonzero()
     marinex, mariney = marinexs.mean(), marineys.mean()
         
     marine_on_beacon = np.min(beaconxs) <= marinex <=  np.max(beaconxs) and np.min(beaconys) <= mariney <=  np.max(beaconys)
         
-    ai_selected = obs.observation['screen'][_AI_SELECTED]
+    ai_selected = obs.observation['feature_screen'][_AI_SELECTED]
     marine_selected = int((ai_selected == 1).any())
     
     return (marine_selected, int(marine_on_beacon)), [beaconxs, beaconys]
@@ -138,7 +138,7 @@ class Agent3(base_agent.BaseAgent):
         elif possible_actions[action] == _SELECT_ARMY:
             func = actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
         elif state[0] and possible_actions[action] == _SELECT_POINT:
-            ai_view = obs.observation['screen'][_AI_RELATIVE]
+            ai_view = obs.observation['feature_screen'][_AI_RELATIVE]
             backgroundxs, backgroundys = (ai_view == _BACKGROUND).nonzero()
             point = np.random.randint(0, len(backgroundxs))
             backgroundx, backgroundy = backgroundxs[point], backgroundys[point]
