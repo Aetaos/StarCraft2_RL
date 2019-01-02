@@ -1,11 +1,25 @@
+from pysc2 import maps
+from pysc2.env import sc2_env
+from queue import Queue
+from .utils import record
+
 class RandomAgent:
     """Random Agent that will play the specified game
       Arguments:
-        env_name: Name of the environment to be played
         max_eps: Maximum number of episodes to run agent for.
+        map_name (String): the name of the mini_game map.
+        viz (Boolean): activate game visualization.
     """
-    def __init__(self, env_name, max_eps):
-        self.env = gym.make(env_name)
+    def __init__(self, max_eps, map_name, viz):
+        # generate sc2 environment
+        self.env = sc2_env.SC2Env(agent_race=None,
+                    bot_race=None,
+                    difficulty=None,
+                    map_name=maps.get(map_name),
+                    visualize=viz,agent_interface_format=sc2_env.AgentInterfaceFormat(
+              feature_dimensions=sc2_env.Dimensions(
+                  screen=64,
+                  minimap=64)))
         self.max_episodes = max_eps
         self.global_moving_average_reward = 0
         self.res_queue = Queue()
