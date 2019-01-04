@@ -8,6 +8,7 @@ from queue import Queue
 from .worker import Worker
 from .utils import generate_env
 from .actor_crtitic_model import ActorCriticModel
+from .random_agent import RandomAgent
 
 class MasterAgent():
     """This class optimizes the global parameter network, by launching several actor-critic agents
@@ -20,10 +21,11 @@ class MasterAgent():
             os.makedirs(save_dir)
 
         env = generate_env(self.game_name)
+        #TODO adapt state and action sizes to pysc2 env
         self.state_size = env.observation_space.shape[0]
         self.action_size = env.action_space.n
-        #TODO add optimizer modularity
-        self.opt = tf.train.AdamOptimizer(args.lr, use_locking=True)
+
+        self.opt = tf.train.RMSPropOptimizer(args.lr, decay=0.99, epsilon=1e-10, use_locking=True)
         print(self.state_size, self.action_size)
 
         self.global_model = ActorCriticModel(self.state_size, self.action_size)  # global network
