@@ -74,7 +74,7 @@ class FullyConv:
 
         def entropy_reg(weight_matrix):
             """Entropy regularization to promote exploration"""
-            return self.eta * K.sum(weight_matrix * K.log(weight_matrix))
+            return - self.eta * K.sum(weight_matrix * K.log(weight_matrix))
 
         out_non_spatial = keras.layers.Dense(len(self.possible_actions), kernel_initializer="he_uniform",
                                              kernel_regularizer=entropy_reg)(intermediate)
