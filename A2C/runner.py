@@ -118,7 +118,6 @@ with sc2_env.SC2Env(agent_race=None,
             if done:
                 print("episode: {}/{}, score: {}"
                       .format(e, MAX_EPISODES, score))
-                agent.train()
                 break
         agent.train()
         agent.save("./save/move_2_beacon-dqn.h5")
