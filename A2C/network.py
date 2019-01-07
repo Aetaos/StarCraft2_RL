@@ -81,7 +81,7 @@ class FullyConv:
         # spatial policy output
         out_spatial = Conv2D(1, kernel_size=(1, 1), data_format='channels_first', kernel_initializer="he_uniform", name='out_spatial')(concat)
         out_spatial = Flatten()(out_spatial)
-        out_spatial = Dense(4096, activation='softmax',kernel_initializer="he_uniform"))(out_spatial)
+        out_spatial = Dense(4096, activation='softmax',kernel_initializer="he_uniform")(out_spatial)
 
         # compile
         model = keras.models.Model(inputs=[input_map, input_mini], outputs=[out_value, out_non_spatial, out_spatial])
