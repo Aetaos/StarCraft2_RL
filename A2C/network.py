@@ -22,11 +22,12 @@ class FullyConv:
     expl_rate : the multiplication factor for the policy output Dense layer, used to favorise exploration. Set to 0 if
         not exploring but exploiting
     model (Keras.model): the actual keras model"""
-
-    def __init__(self, eta, expl_rate, possible_actions):
+    def __init__(self, eta, expl_rate, categorical_actions,spatial_actions):
+        
         self.eta = eta
         self.expl_rate = expl_rate
-        self.possible_actions = possible_actions
+        self.categorical_actions = categorical_actions
+        self.spatial_actions = spatial_actions
         self.model = None
         self.initialize_layers(eta,expl_rate)
 
@@ -73,7 +74,7 @@ class FullyConv:
         out_value = keras.layers.Dense(1)(intermediate)
         out_value = Activation('linear', name='value_output')(out_value)
 
-        out_non_spatial = keras.layers.Dense(len(self.possible_actions), kernel_initializer="he_uniform",
+        out_non_spatial = keras.layers.Dense(len(self.categorical_actions)+len(self.spatial_actions), kernel_initializer="he_uniform",
                                              kernel_regularizer=entropy_reg)(intermediate)
         out_non_spatial = Lambda(lambda x: self.expl_rate * x)(out_non_spatial)
         out_non_spatial = Activation('softmax', name='non_spatial_output')(out_non_spatial)
@@ -81,7 +82,8 @@ class FullyConv:
         # spatial policy output
         out_spatial = Conv2D(1, kernel_size=(1, 1), data_format='channels_first', kernel_initializer="he_uniform", name='out_spatial')(concat)
         out_spatial = Flatten()(out_spatial)
-        out_spatial = Dense(4096, activation='softmax',kernel_initializer="he_uniform"))(out_spatial)
+        out_spatial = Dense(4096, activation='softmax',kernel_initializer="he_uniform")(out_spatial)
+        out_spatial = Activation('softmax', name='spatial_output')(out_spatial)
 
         # compile
         model = keras.models.Model(inputs=[input_map, input_mini], outputs=[out_value, out_non_spatial, out_spatial])

@@ -27,26 +27,16 @@ EPS_DECAY = 2500
 def get_state(obs):
     return [np.array(obs.observation['feature_screen']).reshape(1, 17, 64, 64),
             np.array(obs.observation['feature_minimap']).reshape(1, 7, 64, 64)]
-
-def get_action(id_action,feature_screen):
-    beacon_pos = (feature_screen == _AI_NEUTRAL).nonzero()
-
+"""transform a scalar from [0;4096] to a (y,x) coordinate in 64,64"""
+def to_yx(point):
+    return point%64, (point-(point%64))/64
+def get_action(id_action,point):
+    
+    y,x = to_yx(point)
     if id_action== _NO_OP:
         func = actions.FunctionCall(_NO_OP, [])
     elif id_action == _MOVE_SCREEN:
-        beacon_x, beacon_y = beacon_pos[0].mean(), beacon_pos[1].mean()
-        func = actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [beacon_y, beacon_x]])
+        func = actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [y, x]])
     elif id_action == _SELECT_ARMY:
         func = actions.FunctionCall(_SELECT_ARMY, [_SELECT_ALL])
-    elif id_action == _SELECT_POINT:
-        backgroundxs, backgroundys = (feature_screen == _BACKGROUND).nonzero()
-        point = np.random.randint(0, len(backgroundxs))
-        backgroundx, backgroundy = backgroundxs[point], backgroundys[point]
-        func = actions.FunctionCall(_SELECT_POINT, [_NOT_QUEUED, [backgroundy, backgroundx]])
-    elif id_action == _MOVE_RAND:
-        beacon_x, beacon_y = beacon_pos[0].max(), beacon_pos[1].max()
-        movex, movey = np.random.randint(beacon_x, 64), np.random.randint(beacon_y, 64)
-        func = actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [movey, movex]])
-    elif id_action == _MOVE_MIDDLE:
-        func = actions.FunctionCall(_MOVE_SCREEN, [_NOT_QUEUED, [32, 32]])
     return func

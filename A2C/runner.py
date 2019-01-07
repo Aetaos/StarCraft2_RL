@@ -44,27 +44,34 @@ EPS_DECAY = 2500
 # the beacon or to do nothing
 # it can select the marine or deselect
 # the marine, it can move to a random point
-possible_actions = [
+categorical_actions = [
     _NO_OP,
     _SELECT_ARMY,
-    _SELECT_POINT,
-    _MOVE_SCREEN,
-    _MOVE_RAND,
-    _MOVE_MIDDLE
+    #_SELECT_POINT,
+    #_MOVE_RAND,
+    #_MOVE_MIDDLE
+]
+spatial_actions=[    _MOVE_SCREEN,
 ]
 id_from_actions={}
-for ix,k in enumerate(possible_actions):
-    id_from_actions[k]=ix
+action_from_id={}
+for ix,k in enumerate(spatial_actions):
+    id_from_actions[k] = ix
+    action_from_id[ix] = k
+for ix,k in enumerate(categorical_actions):
+    id_from_actions[k]=ix+len(spatial_actions)
+    action_from_id[ix+len(spatial_actions)] = k
+
 
 #initialize NN model hyperparameters
 eta = 0.1
 expl_rate = 0.2
 
 #initialize model object
-model = FullyConv(eta, expl_rate, possible_actions)
+model = FullyConv(eta, expl_rate, categorical_actions,spatial_actions)
 
 #initalize Agent
-agent = A2CAgent(model, possible_actions, id_from_actions)
+agent = A2CAgent(model, categorical_actions,spatial_actions, id_from_actions,action_from_id)
 
 FLAGS = flags.FLAGS
 FLAGS(['run_sc2'])
@@ -103,16 +110,16 @@ with sc2_env.SC2Env(agent_race=None,
             init = False
             if e == 0 and time == 0:
                 init = True
-            a = agent.act(state, init)
+            a,point = agent.act(state, init)
             if not a in obs[0].observation.available_actions:
                 a = _NO_OP
-            func = get_action(a, state[0][0][_AI_RELATIVE])
+            func = get_action(a, point)
             next_obs = env.step([func])
             next_state = get_state(next_obs[0])
             reward = float(next_obs[0].reward)
             score += reward
             done = next_obs[0].last()
-            agent.append_sample(state, a, reward)
+            agent.append_sample(state, a, reward,point)
             state = next_state
             obs = next_obs
             if done:
