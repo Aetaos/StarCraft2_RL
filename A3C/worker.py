@@ -3,8 +3,8 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from .actor_crtitic_model import ActorCriticModel
-from .utils import *#Memory, record, generate_env
+from actor_crtitic_model import A2CAgent
+from utils import *#Memory, record, generate_env
 
 class Worker(threading.Thread):
     """This class implements a worker thread for the A3C algorithm.
@@ -20,22 +20,17 @@ class Worker(threading.Thread):
     save_lock = threading.Lock()
 
     def __init__(self,
-                 #state_size,
-                 #action_size,
-                 MAX_EPISODES =100
-                 MAX_STEPS = 400
                  categorical_actions,
                  spatial_actions,
-                 
                  global_model,
                  opt,
                  result_queue,
                  idx,
-                 args,
-                 game_name='MoveToBeacon', #default minigame
-                 save_dir='/save'):
+                 game_name='MoveToBeacon',
+                 save_dir='/save',
+                 MAX_EPISODES =100,
+                 MAX_STEPS = 400):
         super(Worker, self).__init__()
-        self.args = args
         self.state_size = state_size
         self.action_size = action_size
         self.result_queue = result_queue

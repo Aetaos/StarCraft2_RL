@@ -5,10 +5,10 @@ import multiprocessing
 import tensorflow as tf
 
 from queue import Queue
-from .worker import Worker
-from .utils import generate_env
-from .actor_crtitic_model import ActorCriticModel
-from .random_agent import RandomAgent
+from worker import Worker
+from utils import generate_env
+from actor_crtitic_model import A2CAgent
+from network import FullyConv
 
 #to do generate a proper env in a separate file
 from pysc2.lib import actions
@@ -16,13 +16,18 @@ from pysc2.lib import features
 from pysc2.env import sc2_env, run_loop, available_actions_printer
 from pysc2 import maps
 from absl import flags
+_NO_OP = actions.FUNCTIONS.no_op.id
+_MOVE_SCREEN = actions.FUNCTIONS.Attack_screen.id
+_SELECT_ARMY = actions.FUNCTIONS.select_army.id
+_SELECT_POINT = actions.FUNCTIONS.select_point.id
+
 
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
-from A2C.a2c_agent import A2CAgent
-from A2C.network import FullyConv
-from A2C.utils import get_state, get_action
+#from A2C.a2c_agent import A2CAgent
+#from A2C.network import FullyConv
+#from A2C.utils import get_state, get_action
 
 class MasterAgent():
     """This class optimizes the global parameter network, by launching several actor-critic agents
@@ -63,7 +68,7 @@ class MasterAgent():
         #self.state_size = env.observation_space.shape[0]
         #self.action_size = env.action_space.n
 
-        self.opt = tf.train.RMSPropOptimizer(args.lr, decay=0.99, epsilon=1e-10, use_locking=True)
+        self.opt = tf.train.RMSPropOptimizer(0.01, decay=0.99, epsilon=1e-10, use_locking=True)
         #print(self.state_size, self.action_size)
 
         #self.global_model = ActorCriticModel(self.state_size, self.action_size)  # global network
@@ -92,10 +97,10 @@ class MasterAgent():
         self.expl_rate = 0.2
         
         #initialize model object
-        self.global_model = FullyConv(eta, expl_rate, categorical_actions,spatial_actions)
+        self.global_model = FullyConv(self.eta, self.expl_rate, categorical_actions,spatial_actions)
         
         #initalize Agent
-        self.agent = A2CAgent(model, categorical_actions,spatial_actions, id_from_actions,action_from_id)
+        self.agent = A2CAgent(self.global_model, categorical_actions,spatial_actions, id_from_actions,action_from_id)
 
         
         #self.global_model(tf.convert_to_tensor(np.random.random((1, self.state_size)), dtype=tf.float32))
@@ -107,12 +112,14 @@ class MasterAgent():
         
             res_queue = Queue()
     
-            workers = [Worker(self.state_size,
-                              self.action_size,
-                              self.global_model,
-                              self.opt, res_queue,
-                              i, game_name=self.game_name,
-                              save_dir=self.save_dir) for i in range(multiprocessing.cpu_count())]
+            workers = [Worker(categorical_actions,
+                 spatial_actions,
+                 global_model,
+                 opt,
+                 result_queue,
+                 idx,
+                 ) for i in range(multiprocessing.cpu_count())]
+            print ("running on", i, "core on Romain 's war machine")
     
             for i, worker in enumerate(workers):
                 print("Starting worker {}".format(i))
@@ -163,6 +170,6 @@ class MasterAgent():
         #finally:
          #   env.close()
 if __name__ == "__main__":
-    master = MasterAgent
+    master = MasterAgent()
     master.train()
     
