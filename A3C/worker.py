@@ -4,6 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from actor_crtitic_model import A2CAgent
+from network import FullyConv
 from utils import *#Memory, record, generate_env
 
 class Worker(threading.Thread):
@@ -31,8 +32,8 @@ class Worker(threading.Thread):
                  MAX_EPISODES =100,
                  MAX_STEPS = 400):
         super(Worker, self).__init__()
-        self.state_size = state_size
-        self.action_size = action_size
+        #self.state_size = state_size
+        #self.action_size = action_size
         self.result_queue = result_queue
         self.global_model = global_model
         self.opt = opt

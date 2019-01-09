@@ -73,23 +73,23 @@ class MasterAgent():
 
         #self.global_model = ActorCriticModel(self.state_size, self.action_size)  # global network
         #self.gobal_model = A2CAgent()
-        categorical_actions = [
+        self.categorical_actions = [
             _NO_OP,
             _SELECT_ARMY,
             #_SELECT_POINT,
             #_MOVE_RAND,
             #_MOVE_MIDDLE
         ]
-        spatial_actions=[    _MOVE_SCREEN,
+        self.spatial_actions=[    _MOVE_SCREEN,
         ]
-        id_from_actions={}
-        action_from_id={}
-        for ix,k in enumerate(spatial_actions):
-            id_from_actions[k] = ix
-            action_from_id[ix] = k
-        for ix,k in enumerate(categorical_actions):
-            id_from_actions[k]=ix+len(spatial_actions)
-            action_from_id[ix+len(spatial_actions)] = k
+        self.id_from_actions={}
+        self.action_from_id={}
+        for ix,k in enumerate(self.spatial_actions):
+            self.id_from_actions[k] = ix
+            self.action_from_id[ix] = k
+        for ix,k in enumerate(self.categorical_actions):
+            self.id_from_actions[k]=ix+len(self.spatial_actions)
+            self.action_from_id[ix+len(self.spatial_actions)] = k
         
         
         #initialize NN model hyperparameters
@@ -97,10 +97,10 @@ class MasterAgent():
         self.expl_rate = 0.2
         
         #initialize model object
-        self.global_model = FullyConv(self.eta, self.expl_rate, categorical_actions,spatial_actions)
+        self.global_model = FullyConv(self.eta, self.expl_rate, self.categorical_actions,self.spatial_actions)
         
         #initalize Agent
-        self.agent = A2CAgent(self.global_model, categorical_actions,spatial_actions, id_from_actions,action_from_id)
+        self.agent = A2CAgent(self.global_model, self.categorical_actions,self.spatial_actions, self.id_from_actions,self.action_from_id)
 
         
         #self.global_model(tf.convert_to_tensor(np.random.random((1, self.state_size)), dtype=tf.float32))
@@ -112,12 +112,12 @@ class MasterAgent():
         
             res_queue = Queue()
     
-            workers = [Worker(categorical_actions,
-                 spatial_actions,
-                 global_model,
-                 opt,
-                 result_queue,
-                 idx,
+            workers = [Worker(self.categorical_actions,
+                 self.spatial_actions,
+                 self.global_model,
+                 self.opt,
+                 res_queue,
+                 i,
                  ) for i in range(multiprocessing.cpu_count())]
             print ("running on", i, "core on Romain 's war machine")
     
