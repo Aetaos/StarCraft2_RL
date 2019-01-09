@@ -65,7 +65,7 @@ for ix,k in enumerate(categorical_actions):
 
 #initialize NN model hyperparameters
 eta = 0.1
-expl_rate = 0.2
+expl_rate = 0.1
 
 #initialize model object
 model = FullyConv(eta, expl_rate, categorical_actions,spatial_actions)

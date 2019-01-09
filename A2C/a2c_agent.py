@@ -30,8 +30,8 @@ class A2CAgent:
         self.action_from_id = action_from_id
 
     def update_epsilon(self):
-        if self.epsilon > 0.05:
-            self.epsilon = 0.95 * self.epsilon
+        if self.epsilon > 0.1:
+            self.epsilon = 0.999 * self.epsilon
 
     def append_sample(self, state, action, reward,point):
         self.states.append(state)
@@ -54,7 +54,7 @@ class A2CAgent:
             return self.action_from_id[np.random.choice(len(self.action_from_id), 1)[0]],np.random.randint(4096)
         else:
             preds=self.model.predict(state)
-            return self.action_from_id[np.random.choice(len(self.action_from_id),1,p=preds[1][0])[0]],preds[2][0].argmax()
+            return self.action_from_id[np.random.choice(len(self.action_from_id),1,p=preds[1][0])[0]],np.random.choice(4096, 1, p=preds[2][0])[0]
 
     def train(self):
         episode_length = len(self.states)
