@@ -3,8 +3,18 @@ import os
 import numpy as np
 import tensorflow as tf
 
-from .actor_crtitic_model import ActorCriticModel
-from .utils import Memory, record, generate_env
+from actor_crtitic_model import A2CAgent
+from network import FullyConv
+
+from utils import *#Memory, record, generate_env
+
+from pysc2 import maps
+from pysc2.lib import actions
+_NO_OP = actions.FUNCTIONS.no_op.id
+_MOVE_SCREEN = actions.FUNCTIONS.Attack_screen.id
+_SELECT_ARMY = actions.FUNCTIONS.select_army.id
+_SELECT_POINT = actions.FUNCTIONS.select_point.id
+
 
 class Worker(threading.Thread):
     """This class implements a worker thread for the A3C algorithm.
@@ -20,97 +30,189 @@ class Worker(threading.Thread):
     save_lock = threading.Lock()
 
     def __init__(self,
-                 state_size,
-                 action_size,
+                 categorical_actions,
+                 spatial_actions,
                  global_model,
                  opt,
                  result_queue,
                  idx,
-                 args,
-                 game_name='MoveToBeacon', #default minigame
-                 save_dir='/tmp'):
+                 game_name='MoveToBeacon',
+                 save_dir='/save',
+                 MAX_EPISODES =100,
+                 MAX_STEPS = 400):
         super(Worker, self).__init__()
-        self.args = args
-        self.state_size = state_size
-        self.action_size = action_size
+        #self.state_size = state_size
+        #self.action_size = action_size
         self.result_queue = result_queue
         self.global_model = global_model
         self.opt = opt
-        self.local_model = ActorCriticModel(self.state_size, self.action_size)
+        #self.local_model = ActorCriticModel(self.state_size, self.action_size)
+        
         self.worker_idx = idx
         self.game_name = game_name
         self.env = generate_env(game_name)
         self.save_dir = save_dir
         self.ep_loss = 0.0
+        
+        self.MAX_EPISODES =100
+        self.MAX_STEPS = 400
+    
+        self.spatial_actions = spatial_actions
+        self.categorical_actions = categorical_actions
+        self.id_from_actions = {}
+        self.action_from_id = {}
+        for ix,k in enumerate(spatial_actions):
+            self.id_from_actions[k] = ix
+            self.action_from_id[ix] = k
+            for ix,k in enumerate(categorical_actions):
+                self.id_from_actions[k]=ix+len(spatial_actions)
+                self.action_from_id[ix+len(spatial_actions)] = k
+        
+        self.eta = 0.1
+        self.expl_rate = 0.2
+
+        #initialize model object
+        model = FullyConv(self.eta, self.expl_rate, categorical_actions,spatial_actions)
+
+        #initalize Agent
+        self.agent = A2CAgent(model, categorical_actions,spatial_actions, self.id_from_actions,self.action_from_id)
+
 
     def run(self):
-        total_step = 1
-        mem = Memory()
-        while Worker.global_episode < self.args.max_eps:
-            current_state = self.env.reset()
-            mem.clear()
-            ep_reward = 0.
-            ep_steps = 0
-            self.ep_loss = 0
+        
+        #FLAGS = flags.FLAGS
+        #FLAGS(['run_sc2'])
+        #MAX_EPISODES =100
+        #MAX_STEPS = 400
+        
+        
+        #steps = 0
+        #FLAGS(['run_sc2'])
+        #FLAGS(['run_sc2'])
+                 
+        # create a map
+        #beacon_map = maps.get('MoveToBeacon')
 
-            time_count = 0
+
+        #run trajectories and train
+        try:
+            # agent.load("./save/move_2_beacon-dqn.h5")
+    
             done = False
-            while not done:
-                logits, _ = self.local_model(
-                    tf.convert_to_tensor(current_state[None, :],
-                                         dtype=tf.float32))
-                probs = tf.nn.softmax(logits)
+            # batch_size = 5
+    
+            for e in range(self.MAX_EPISODES):
+                #obs = env.reset()
+                #score = 0
+                #state = get_state(obs[0])
+                #for time in range(self.MAX_STEPS):
+                # env.render()
+                    #init = False
+                    #if e == 0 and time == 0:
+                    #    init = True
+                 #   a,point = self.agent.act(state, False)
+                  #  if not a in obs[0].observation.available_actions:
+                        a = _NO_OP
+                   # func = get_action(a, point)
+                    #next_obs = env.step([func])
+                    #next_state = get_state(next_obs[0])
+                    #reward = float(next_obs[0].reward)
+                    #score += reward
+                    #done = next_obs[0].last()
+                    #agent.append_sample(state, a, reward,point)
+                    #state = next_state
+                    #obs = next_obs
+                    #if done:
+                    #    print("episode: {}/{}, score: {}"
+                     #         .format(e, MAX_EPISODES, score))
+                      #  break
+                 #agent.train()
+                #agent.save("./save/move_2_beacon-dqn.h5")
+            
+            
+        
+        #####
+            total_step = 1
+            mem = Memory()
+            while Worker.global_episode < self.MAX_EPISODES:
+                #current_state = self.env.reset()
+                obs = self.env.reset()
+                state = get_state(obs[0])
+          
+                mem.clear()
+                ep_reward = 0.
+                ep_steps = 0
+                self.ep_loss = 0
 
-                action = np.random.choice(self.action_size, p=probs.numpy()[0])
-                new_state, reward, done, _ = self.env.step(action)
-                if done:
-                    reward = -1
-                ep_reward += reward
-                mem.store(current_state, action, reward)
+                time_count = 0
+                done = False
+                while not done:
+                    a,point = self.agent.act(state, False)
+                    #To dO resample proba in available action space
+                    if not a in obs[0].observation.available_actions:
+                        a = _NO_OP
+                    func = get_action(a, point)
+                    next_obs = self.env.step([func])
+                    next_state = get_state(next_obs[0])
+                    reward = float(next_obs[0].reward)
+                    #score += reward
+                    done = next_obs[0].last()
+                    #agent.append_sample(state, a, reward,point)
+                    
+                    #if done:
+                        #reward = -1
+                    ep_reward += reward
+                    mem.store(state, a, reward,point)
+                    state = next_state
+                    obs = next_obs
+                    
+                    time_count += 1
+                    total_step += 1
+                    ep_steps += 1
 
-                if time_count == self.args.update_freq or done:
-                    # Calculate gradient wrt to local model. We do so by tracking the
-                    # variables involved in computing the loss by using tf.GradientTape
-                    with tf.GradientTape() as tape:
-                        total_loss = self.compute_loss(done,
-                                                       new_state,
+        
+                    
+
+                #if time_count == self.args.update_freq or done:
+                # Calculate gradient wrt to local model. We do so by tracking the
+                # variables involved in computing the loss by using tf.GradientTape
+                with tf.GradientTape() as tape:
+                    total_loss = self.compute_loss(done,
+                                                       next_state,
                                                        mem,
-                                                       self.args.gamma)
-                    self.ep_loss += total_loss
-                    # Calculate local gradients
-                    grads = tape.gradient(total_loss, self.local_model.trainable_weights)
-                    # Push local gradients to global model
-                    self.opt.apply_gradients(zip(grads,
-                                                 self.global_model.trainable_weights))
-                    # Update local model with new weights
-                    self.local_model.set_weights(self.global_model.get_weights())
+                                                       self.agent.gamma)
+                self.ep_loss += total_loss
+                # Calculate local gradients
+                grads = tape.gradient(total_loss, self.agent.model.trainable_weights)
+                # Push local gradients to global model
+                self.opt.apply_gradients(zip(grads,
+                                             self.global_model.trainable_weights))
+                # Update local model with new weights
+                self.agent.model.set_weights(self.global_model.get_weights())
 
-                    mem.clear()
-                    time_count = 0
+                #mem.clear()
+                #time_count = 0
 
-                    if done:  # done and print information
-                        Worker.global_moving_average_reward = \
-                            record(Worker.global_episode, ep_reward, self.worker_idx,
-                                   Worker.global_moving_average_reward, self.result_queue,
-                                   self.ep_loss, ep_steps)
-                        # We must use a lock to save our model and to print to prevent data races.
-                        if ep_reward > Worker.best_score:
-                            with Worker.save_lock:
-                                print("Saving best model to {}, "
-                                      "episode score: {}".format(self.save_dir, ep_reward))
-                                self.global_model.save_weights(
-                                    os.path.join(self.save_dir,
-                                                 'model_{}.h5'.format(self.game_name))
-                                )
-                                Worker.best_score = ep_reward
-                        Worker.global_episode += 1
-                ep_steps += 1
-
-                time_count += 1
-                current_state = new_state
-                total_step += 1
-        self.result_queue.put(None)
-
+                 #if done:  # done and print information
+                Worker.global_moving_average_reward = \
+                    record(Worker.global_episode, ep_reward, self.worker_idx,
+                           Worker.global_moving_average_reward, self.result_queue,
+                           self.ep_loss, ep_steps)
+                # We must use a lock to save our model and to print to prevent data races.
+                if ep_reward > Worker.best_score:
+                    with Worker.save_lock:
+                        print("Saving best model to {}, "
+                              "episode score: {}".format(self.save_dir, ep_reward))
+                        self.global_model.save_weights(
+                            os.path.join(self.save_dir,
+                                         'model_{}.h5'.format(self.game_name))
+                        )
+                        Worker.best_score = ep_reward
+                Worker.global_episode += 1
+                self.agent.update_epsilon()
+                self.result_queue.put(None)
+        finally:
+            self.env.close()
     def compute_loss(self,
                      done,
                      new_state,
@@ -119,7 +221,7 @@ class Worker(threading.Thread):
         if done:
             reward_sum = 0.  # terminal
         else:
-            reward_sum = self.local_model(
+            reward_sum = self.agent.model(
                 tf.convert_to_tensor(new_state[None, :],
                                      dtype=tf.float32))[-1].numpy()[0]
 
@@ -129,10 +231,11 @@ class Worker(threading.Thread):
             reward_sum = reward + gamma * reward_sum
             discounted_rewards.append(reward_sum)
         discounted_rewards.reverse()
+       
+        s = [np.vstack(np.array([memory.states[k][0] for k in range(len(memory.states))])),np.vstack(np.array([memory.states[k][1] for k in range(len (memory.states))]))]
 
-        logits, values = self.local_model(
-            tf.convert_to_tensor(np.vstack(memory.states),
-                                 dtype=tf.float32))
+        values,logits, spatial = self.agent.model(
+            tf.convert_to_tensor(s))
         # Get our advantages
         advantage = tf.convert_to_tensor(np.array(discounted_rewards)[:, None],
                                          dtype=tf.float32) - values
@@ -142,10 +245,20 @@ class Worker(threading.Thread):
         # Calculate our policy loss
         policy = tf.nn.softmax(logits)
         entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=policy, logits=logits)
-
+    
         policy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=memory.actions,
                                                                      logits=logits)
         policy_loss *= tf.stop_gradient(advantage)
         policy_loss -= 0.01 * entropy
-        total_loss = tf.reduce_mean((0.5 * value_loss + policy_loss))
+        
+         # Calculate our spatial loss
+        policy_spatial = tf.nn.softmax(spatial)
+        entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=policy_spatial, logits=spatial)
+    
+        policy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=memory.points,
+                                                                     logits=spatial)
+        policy_loss *= tf.stop_gradient(advantage)
+        policy_loss -= 0.01 * entropy
+       
+        total_loss = tf.reduce_mean((0.5 * value_loss + policy_loss + spatial_loss))
         return total_loss

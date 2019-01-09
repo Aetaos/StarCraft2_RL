@@ -1,20 +1,54 @@
 import keras
 
-class ActorCriticModel(keras.Model):
-    """This class implements the forward pass for the global actor-critic model"""
-    def __init__(self, state_size, action_size):
-        super(ActorCriticModel, self).__init__()
-        self.state_size = state_size
-        self.action_size = action_size
-        self.dense1 = layers.Dense(100, activation='relu')
-        self.policy_logits = layers.Dense(action_size)
-        self.dense2 = layers.Dense(100, activation='relu')
-        self.values = layers.Dense(1)
+import math
+import numpy as np
+from pysc2.agents import base_agent
+from pysc2.lib import actions
+from pysc2.lib import features
+from pysc2.env import sc2_env, run_loop, available_actions_printer
+from pysc2 import maps
+from absl import flags
+from collections import deque
+import keras
+from keras import backend as K
+from keras.models import Sequential
+from keras.layers import Dense,Conv1D,Conv2D,Dropout,Flatten,Activation,MaxPool1D,MaxPooling2D,Lambda
+from keras.optimizers import Adam, RMSprop
 
-    def call(self, inputs):
-        # Forward pass
-        x = self.dense1(inputs)
-        logits = self.policy_logits(x)
-        v1 = self.dense2(inputs)
-        values = self.values(v1)
-        return logits, values
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+
+
+class A2CAgent:
+    """This class implements the A2C agent using the network model"""
+
+    def __init__(self, model, categorical_actions,spatial_actions, id_from_actions,action_from_id):
+        self.gamma = 0.95  # discount rate
+        self.categorical_actions = categorical_actions
+        self.spatial_actions = spatial_actions
+        self.model = model
+        self.epsilon = 0.5
+        self.id_from_actions = id_from_actions
+        self.action_from_id = action_from_id
+
+    def update_epsilon(self):
+        if self.epsilon > 0.05:
+            self.epsilon = 0.99 * self.epsilon
+
+    
+   
+    def act(self, state, init=False):
+        policy = (self.model.predict(state)[1]).flatten()
+        
+        if init or np.random.random() < self.epsilon:
+            return self.action_from_id[np.random.choice(len(self.action_from_id), 1)[0]],np.random.randint(4096)
+        else:
+            preds=self.model.predict(state)
+            return self.action_from_id[np.random.choice(len(self.action_from_id),1,p=preds[1][0])[0]],np.random.choice(4096,1,p=preds[2][0])[0]
+
+    def load(self, name):
+        self.model.load_weights(name)
+
+    def save(self, name):
+        self.model.save_weights(name)
