@@ -4,7 +4,7 @@ import numpy as np
 import tensorflow as tf
 
 from .actor_crtitic_model import ActorCriticModel
-from .utils import Memory, record, generate_env
+from .utils import *#Memory, record, generate_env
 
 class Worker(threading.Thread):
     """This class implements a worker thread for the A3C algorithm.
@@ -22,10 +22,6 @@ class Worker(threading.Thread):
     def __init__(self,
                  #state_size,
                  #action_size,
-                 FLAGS = flags.FLAGS
-                 viz = False
-                 save_replay = False
-                 steps_per_episode = 0 # 0 actually means unlimited
                  MAX_EPISODES =100
                  MAX_STEPS = 400
                  categorical_actions,
@@ -53,10 +49,6 @@ class Worker(threading.Thread):
         self.save_dir = save_dir
         self.ep_loss = 0.0
         
-        self.FLAGS = flags.FLAGS
-        self.viz = False
-        self.save_replay = False
-        self.steps_per_episode = 0 # 0 actually means unlimited
         self.MAX_EPISODES =100
         self.MAX_STEPS = 400
     
@@ -71,11 +63,11 @@ class Worker(threading.Thread):
                 self.id_from_actions[k]=ix+len(spatial_actions)
                 self.action_from_id[ix+len(spatial_actions)] = k
         
-        eta = 0.1
-        expl_rate = 0.2
+        self.eta = 0.1
+        self.expl_rate = 0.2
 
         #initialize model object
-        model = FullyConv(eta, expl_rate, categorical_actions,spatial_actions)
+        model = FullyConv(self.eta, self.expl_rate, categorical_actions,spatial_actions)
 
         #initalize Agent
         self.agent = A2CAgent(model, categorical_actions,spatial_actions, self.id_from_actions,self.action_from_id)
@@ -85,9 +77,6 @@ class Worker(threading.Thread):
         
         FLAGS = flags.FLAGS
         FLAGS(['run_sc2'])
-        viz = False
-        save_replay = False
-        steps_per_episode = 0 # 0 actually means unlimited
         MAX_EPISODES =100
         MAX_STEPS = 400
         
@@ -100,46 +89,39 @@ class Worker(threading.Thread):
 
 
         #run trajectories and train
-        with sc2_env.SC2Env(agent_race=None,
-                            bot_race=None,
-                            difficulty=None,
-                            map_name=beacon_map,
-                            visualize=self.viz, agent_interface_format=sc2_env.AgentInterfaceFormat(
-                    feature_dimensions=sc2_env.Dimensions(
-                        screen=64,
-                        minimap=64))) as env:
+        with generate_env(maps,) as env:
             # agent.load("./save/move_2_beacon-dqn.h5")
     
             done = False
             # batch_size = 5
     
             for e in range(self.MAX_EPISODES):
-                obs = env.reset()
-                score = 0
-                state = get_state(obs[0])
-                for time in range(self.MAX_STEPS):
+                #obs = env.reset()
+                #score = 0
+                #state = get_state(obs[0])
+                #for time in range(self.MAX_STEPS):
                 # env.render()
                     #init = False
                     #if e == 0 and time == 0:
                     #    init = True
-                    a,point = self.agent.act(state, False)
-                    if not a in obs[0].observation.available_actions:
+                 #   a,point = self.agent.act(state, False)
+                  #  if not a in obs[0].observation.available_actions:
                         a = _NO_OP
-                    func = get_action(a, point)
-                    next_obs = env.step([func])
-                    next_state = get_state(next_obs[0])
-                    reward = float(next_obs[0].reward)
-                    score += reward
-                    done = next_obs[0].last()
-                    agent.append_sample(state, a, reward,point)
-                    state = next_state
-                    obs = next_obs
-                    if done:
-                        print("episode: {}/{}, score: {}"
-                              .format(e, MAX_EPISODES, score))
-                        break
-                agent.train()
-                agent.save("./save/move_2_beacon-dqn.h5")
+                   # func = get_action(a, point)
+                    #next_obs = env.step([func])
+                    #next_state = get_state(next_obs[0])
+                    #reward = float(next_obs[0].reward)
+                    #score += reward
+                    #done = next_obs[0].last()
+                    #agent.append_sample(state, a, reward,point)
+                    #state = next_state
+                    #obs = next_obs
+                    #if done:
+                    #    print("episode: {}/{}, score: {}"
+                     #         .format(e, MAX_EPISODES, score))
+                      #  break
+                 #agent.train()
+                #agent.save("./save/move_2_beacon-dqn.h5")
             
             
         
@@ -160,6 +142,7 @@ class Worker(threading.Thread):
                 done = False
                 while not done:
                     a,point = self.agent.act(state, False)
+                    #To dO resample proba in available action space
                     if not a in obs[0].observation.available_actions:
                         a = _NO_OP
                     func = get_action(a, point)
@@ -173,7 +156,7 @@ class Worker(threading.Thread):
                     #if done:
                         #reward = -1
                     ep_reward += reward
-                    mem.store(state, action, reward)
+                    mem.store(state, action, reward,point)
                     state = next_state
                     obs = next_obs
                     
@@ -189,7 +172,7 @@ class Worker(threading.Thread):
                 # variables involved in computing the loss by using tf.GradientTape
                 with tf.GradientTape() as tape:
                     total_loss = self.compute_loss(done,
-                                                       new_state,
+                                                       next_state,
                                                        mem,
                                                        self.args.gamma)
                 self.ep_loss += total_loss
@@ -201,8 +184,8 @@ class Worker(threading.Thread):
                 # Update local model with new weights
                 self.agent.model.set_weights(self.global_model.get_weights())
 
-                mem.clear()
-                time_count = 0
+                #mem.clear()
+                #time_count = 0
 
                  #if done:  # done and print information
                 Worker.global_moving_average_reward = \
@@ -220,7 +203,7 @@ class Worker(threading.Thread):
                         )
                         Worker.best_score = ep_reward
                 Worker.global_episode += 1
-              
+                self.agent.update_epsilon()
                 self.result_queue.put(None)
 
     def compute_loss(self,
@@ -242,7 +225,7 @@ class Worker(threading.Thread):
             discounted_rewards.append(reward_sum)
         discounted_rewards.reverse()
 
-        logits, values = self.agent.model(
+        values,logits, spatial = self.agent.model(
             tf.convert_to_tensor(np.vstack(memory.states),
                                  dtype=tf.float32))
         # Get our advantages
@@ -254,10 +237,20 @@ class Worker(threading.Thread):
         # Calculate our policy loss
         policy = tf.nn.softmax(logits)
         entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=policy, logits=logits)
-
+    
         policy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=memory.actions,
                                                                      logits=logits)
         policy_loss *= tf.stop_gradient(advantage)
         policy_loss -= 0.01 * entropy
-        total_loss = tf.reduce_mean((0.5 * value_loss + policy_loss))
+        
+         # Calculate our spatial loss
+        policy_spatial = tf.nn.softmax(spatial)
+        entropy = tf.nn.softmax_cross_entropy_with_logits_v2(labels=policy_spatial, logits=spatial)
+    
+        policy_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=memory.points,
+                                                                     logits=spatial)
+        policy_loss *= tf.stop_gradient(advantage)
+        policy_loss -= 0.01 * entropy
+       
+        total_loss = tf.reduce_mean((0.5 * value_loss + policy_loss + spatial_loss))
         return total_loss

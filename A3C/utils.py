@@ -1,9 +1,11 @@
 import numpy as np
-from pysc2.agents import base_agent
+#from pysc2.agents import base_agent
 from pysc2.lib import actions
 from pysc2.lib import features
 from pysc2.env import sc2_env, run_loop, available_actions_printer
 from pysc2 import maps
+from absl import flags
+
 
 _AI_RELATIVE = features.SCREEN_FEATURES.player_relative.index
 _AI_SELECTED = features.SCREEN_FEATURES.selected.index
@@ -11,8 +13,6 @@ _NO_OP = actions.FUNCTIONS.no_op.id
 _MOVE_SCREEN = actions.FUNCTIONS.Attack_screen.id
 _SELECT_ARMY = actions.FUNCTIONS.select_army.id
 _SELECT_POINT = actions.FUNCTIONS.select_point.id
-_MOVE_RAND = 1000
-_MOVE_MIDDLE = 2000
 _BACKGROUND = 0
 _AI_SELF = 1
 _AI_ALLIES = 2
@@ -73,7 +73,7 @@ def record(episode,
     result_queue.put(global_ep_reward)
     return global_ep_reward
 
-def generate_env(map_name, viz):
+def generate_env(map_name, viz=False):
     """This function returns a new sc2 environment, with 64x64 dimensions.
     Parameters
     ----------
@@ -83,6 +83,9 @@ def generate_env(map_name, viz):
     Returns
     -------
     env (pysc2.env.sc2_env.SC2Env): the new environment."""
+    FLAGS = flags.FLAGS
+    FLAGS(['run_sc2'])
+       
     env = sc2_env.SC2Env(agent_race=None,
                     bot_race=None,
                     difficulty=None,
@@ -91,6 +94,7 @@ def generate_env(map_name, viz):
               feature_dimensions=sc2_env.Dimensions(
                   screen=64,
                   minimap=64)))
+    return env
 
 class Memory:
     """This class allows to keep track of states, actions and rewards at each step."""
@@ -98,13 +102,16 @@ class Memory:
         self.states = []
         self.actions = []
         self.rewards = []
+        self.points = []
 
-    def store(self, state, action, reward):
+    def store(self, state, action, reward,point):
         self.states.append(state)
         self.actions.append(action)
         self.rewards.append(reward)
+        self.points.append(point)
 
     def clear(self):
         self.states = []
         self.actions = []
         self.rewards = []
+        self.points = []
