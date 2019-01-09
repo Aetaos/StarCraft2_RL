@@ -180,7 +180,7 @@ class Worker(threading.Thread):
                     total_loss = self.compute_loss(done,
                                                        next_state,
                                                        mem,
-                                                       self.args.gamma)
+                                                       self.agent.gamma)
                 self.ep_loss += total_loss
                 # Calculate local gradients
                 grads = tape.gradient(total_loss, self.agent.model.trainable_weights)
@@ -231,10 +231,11 @@ class Worker(threading.Thread):
             reward_sum = reward + gamma * reward_sum
             discounted_rewards.append(reward_sum)
         discounted_rewards.reverse()
+       
+        s = [np.vstack(np.array([memory.states[k][0] for k in range(len(memory.states))])),np.vstack(np.array([memory.states[k][1] for k in range(len (memory.states))]))]
 
         values,logits, spatial = self.agent.model(
-            tf.convert_to_tensor(np.vstack(memory.states),
-                                 dtype=tf.float32))
+            tf.convert_to_tensor(s))
         # Get our advantages
         advantage = tf.convert_to_tensor(np.array(discounted_rewards)[:, None],
                                          dtype=tf.float32) - values
