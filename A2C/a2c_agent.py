@@ -1,17 +1,12 @@
 import math
 import numpy as np
-from pysc2.agents import base_agent
+#from pysc2.agents import base_agent
 from pysc2.lib import actions
 from pysc2.lib import features
 from pysc2.env import sc2_env, run_loop, available_actions_printer
 from pysc2 import maps
 from absl import flags
-from collections import deque
-import keras
-from keras import backend as K
-from keras.models import Sequential
-from keras.layers import Dense,Conv1D,Conv2D,Dropout,Flatten,Activation,MaxPool1D,MaxPooling2D,Lambda
-from keras.optimizers import Adam, RMSprop
+#from collections import deque
 
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
@@ -100,3 +95,58 @@ class A2CAgent:
 
     def save(self, name):
         self.model.save_weights(name)
+    def run(self):
+        FLAGS = flags.FLAGS
+        FLAGS(['run_sc2'])
+        viz = False
+        save_replay = False
+        steps_per_episode = 0 # 0 actually means unlimited
+        MAX_EPISODES =100
+        MAX_STEPS = 400
+        steps = 0
+
+        # create a map
+        beacon_map = maps.get('MoveToBeacon')
+
+
+    #run trajectories and train
+    with sc2_env.SC2Env(agent_race=None,
+                        bot_race=None,
+                        difficulty=None,
+                        map_name=beacon_map,
+                        visualize=viz, agent_interface_format=sc2_env.AgentInterfaceFormat(
+                feature_dimensions=sc2_env.Dimensions(
+                    screen=64,
+                    minimap=64))) as env:
+        # agent.load("./save/move_2_beacon-dqn.h5")
+    
+        done = False
+        # batch_size = 5
+    
+        for e in range(MAX_EPISODES):
+            obs = env.reset()
+            score = 0
+            state = get_state(obs[0])
+            for time in range(MAX_STEPS):
+                # env.render()
+                init = False
+                if e == 0 and time == 0:
+                    init = True
+                a,point = agent.act(state, init)
+                if not a in obs[0].observation.available_actions:
+                    a = _NO_OP
+                func = get_action(a, point)
+                next_obs = env.step([func])
+                next_state = get_state(next_obs[0])
+                reward = float(next_obs[0].reward)
+                score += reward
+                done = next_obs[0].last()
+                agent.append_sample(state, a, reward,point)
+                state = next_state
+                obs = next_obs
+                if done:
+                    print("episode: {}/{}, score: {}"
+                          .format(e, MAX_EPISODES, score))
+                    break
+            agent.train()
+            agent.save("./save/move_2_beacon-dqn.h5")
