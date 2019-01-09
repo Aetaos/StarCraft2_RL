@@ -118,8 +118,9 @@ class MasterAgent():
                  self.opt,
                  res_queue,
                  i,
-                 ) for i in range(multiprocessing.cpu_count())]
-            print ("running on", i, "core on Romain 's war machine")
+                 ) for i in range(1)]
+            #in range(multiprocessing.cpu_count())]
+            print ("running on", multiprocessing.cpu_count(), "core on Romain 's war machine")
     
             for i, worker in enumerate(workers):
                 print("Starting worker {}".format(i))

@@ -5,7 +5,16 @@ import tensorflow as tf
 
 from actor_crtitic_model import A2CAgent
 from network import FullyConv
+
 from utils import *#Memory, record, generate_env
+
+from pysc2 import maps
+from pysc2.lib import actions
+_NO_OP = actions.FUNCTIONS.no_op.id
+_MOVE_SCREEN = actions.FUNCTIONS.Attack_screen.id
+_SELECT_ARMY = actions.FUNCTIONS.select_army.id
+_SELECT_POINT = actions.FUNCTIONS.select_point.id
+
 
 class Worker(threading.Thread):
     """This class implements a worker thread for the A3C algorithm.
@@ -71,21 +80,22 @@ class Worker(threading.Thread):
 
     def run(self):
         
-        FLAGS = flags.FLAGS
-        FLAGS(['run_sc2'])
-        MAX_EPISODES =100
-        MAX_STEPS = 400
+        #FLAGS = flags.FLAGS
+        #FLAGS(['run_sc2'])
+        #MAX_EPISODES =100
+        #MAX_STEPS = 400
         
         
-        steps = 0
-        FLAGS(['run_sc2'])
+        #steps = 0
+        #FLAGS(['run_sc2'])
+        #FLAGS(['run_sc2'])
                  
         # create a map
-        beacon_map = maps.get('MoveToBeacon')
+        #beacon_map = maps.get('MoveToBeacon')
 
 
         #run trajectories and train
-        with generate_env(maps,) as env:
+        try:
             # agent.load("./save/move_2_beacon-dqn.h5")
     
             done = False
@@ -126,7 +136,7 @@ class Worker(threading.Thread):
             mem = Memory()
             while Worker.global_episode < self.MAX_EPISODES:
                 #current_state = self.env.reset()
-                obs = env.reset()
+                obs = self.env.reset()
                 state = get_state(obs[0])
           
                 mem.clear()
@@ -142,7 +152,7 @@ class Worker(threading.Thread):
                     if not a in obs[0].observation.available_actions:
                         a = _NO_OP
                     func = get_action(a, point)
-                    next_obs = env.step([func])
+                    next_obs = self.env.step([func])
                     next_state = get_state(next_obs[0])
                     reward = float(next_obs[0].reward)
                     #score += reward
@@ -152,7 +162,7 @@ class Worker(threading.Thread):
                     #if done:
                         #reward = -1
                     ep_reward += reward
-                    mem.store(state, action, reward,point)
+                    mem.store(state, a, reward,point)
                     state = next_state
                     obs = next_obs
                     
@@ -201,7 +211,8 @@ class Worker(threading.Thread):
                 Worker.global_episode += 1
                 self.agent.update_epsilon()
                 self.result_queue.put(None)
-
+        finally:
+            self.env.close()
     def compute_loss(self,
                      done,
                      new_state,
