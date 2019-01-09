@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing
 import tensorflow as tf
+import keras 
 
 from queue import Queue
 from worker import Worker
