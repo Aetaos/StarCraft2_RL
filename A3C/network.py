@@ -98,23 +98,26 @@ class FullyConv:
         lossWeights = {"value_output": 1.0, "non_spatial_output": 1.0, "spatial_output": 1.0}
         model.compile(loss=losses, loss_weights=lossWeights, optimizer=RMSprop(lr=0.1))
         self.model = model
-      #  self.model._make_predict_function()
-       # self.graph = tf.get_default_graph()
+        self.model._make_predict_function()
+        self.graph = tf.get_default_graph()
 
 
     def predict(self, *args, **kwargs):
         """wrapper for keras model predict function"""
-        #with self.graph.as_default():
-        return self.model.predict(*args, **kwargs)
+        with self.graph.as_default():
+            return self.model.predict(*args, **kwargs)
 
     def fit(self, *args, **kwargs):
         """wrapper for keras model fit function"""
-        return self.model.fit(*args, **kwargs)
+        with self.graph.as_default():
+            return self.model.fit(*args, **kwargs)
 
     def load_weights(self, *args, **kwargs):
         """wrapper for keras model load_weights function"""
-        return self.model.load_weights(*args, **kwargs)
+        with self.graph.as_default():
+            return self.model.load_weights(*args, **kwargs)
 
     def save_weights(self, *args, **kwargs):
         """wrapper for keras model save_weights function"""
-        return self.model.save_weights(*args, **kwargs)
+        with self.graph.as_default():
+            return self.model.save_weights(*args, **kwargs)

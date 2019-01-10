@@ -63,8 +63,9 @@ class MasterAgent():
                     screen=64,
                     minimap=64))) as env:
 """ 
-
-        self.env = generate_env(beacon_map)
+            
+        #self.env = generate_env(beacon_map)
+        
         #TODO adapt state and action sizes to pysc2 env
         #self.state_size = env.observation_space.shape[0]
         #self.action_size = env.action_space.n
@@ -143,7 +144,8 @@ class MasterAgent():
                                      '{} Moving Average.png'.format(self.game_name)))
             plt.show()
         finally :
-            self.env.close()
+            #self.env.close()
+            print("closing")
 
     def play(self):
         return 0
