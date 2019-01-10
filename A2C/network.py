@@ -145,9 +145,28 @@ class FullyConvLSTM:
         cnn_map.add(Conv2D(16, kernel_size=(5,5), data_format='channels_first', input_shape=(17,64,64), kernel_initializer='he_uniform'))
         cnn_map.add(Activation('relu'))
         cnn_map.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first'))
+
         model_view_map= Sequential()
         model_view_map.add(TimeDistributed(cnn_map))
+        model_view_map.add(ConvLSTM2D(filters=32, kernel_size=(3,3), strides=(1,1), activation='relu'))
 
+        model_view_map.add(MaxPooling2D(pool_size=(2,2), strides=None, padding='valid', data_format='channels_first'))
+        model_view_map.add(Flatten())
+
+        cnn_mini = Sequential()
+        cnn_mini.add(Conv2D(16, kernel_size=(5, 5), data_format='channels_first', input_shape=(17, 64, 64),
+                           kernel_initializer='he_uniform'))
+        cnn_mini.add(Activation('relu'))
+        cnn_mini.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first'))
+
+        model_view_mini = Sequential()
+        model_view_mini.add(TimeDistributed(cnn_mini))
+        model_view_mini.add(ConvLSTM2D(filters=32, kernel_size=(3, 3), strides=(1,1), activation='relu'))
+
+        model_view_mini.add(MaxPooling2D(pool_size=(2,2), strides=None, padding='valid', data_format='channels_first'))
+        model_view_mini.add(Flatten())
+
+        concat = 
         # map conv
         input_map = keras.layers.Input(shape=(17, 64, 64), name='input_map')
         model_view_map = TimeDistributed(Conv2D(16, kernel_size=(5, 5), data_format='channels_first', input_shape=(17, 64, 64),kernel_initializer="he_uniform"))(input_map)

@@ -68,7 +68,8 @@ eta = 0.1
 expl_rate = 0.1
 
 #initialize model object
-model = FullyConvLSTM(eta, expl_rate, categorical_actions,spatial_actions)
+#model = FullyConvLSTM(eta, expl_rate, categorical_actions,spatial_actions) #fullyconv lstm agent
+model = FullyConv(eta, expl_rate, categorical_actions, spatial_actions) #fully conv agent
 
 #initalize Agent
 agent = A2CAgent(model, categorical_actions,spatial_actions, id_from_actions,action_from_id)
