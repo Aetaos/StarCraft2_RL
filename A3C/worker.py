@@ -84,7 +84,13 @@ class Worker(threading.Thread):
         #initalize Agent
         self.agent = A2CAgent(model, categorical_actions,spatial_actions, self.id_from_actions,self.action_from_id)
 
-
+    def discount_rewards(self, rewards):
+        discounted_rewards = np.zeros_like(rewards)
+        running_add = 0
+        for t in reversed(range(0, len(rewards))):
+            running_add = running_add * self.agent.gamma + rewards[t]
+            discounted_rewards[t] = running_add
+        return discounted_rewards
     def run(self):
         
         #FLAGS = flags.FLAGS
@@ -244,15 +250,16 @@ class Worker(threading.Thread):
             update_inputs[0][i, :, :, :] = memory.states[i][0][0, :, :, :]
             update_inputs[1][i, :, :, :] = memory.states[i][1][0, :, :, :]
            
-        values = self.model.predict(update_inputs)[0]
+        values = self.agent.model.predict(update_inputs)[0]
 
         advantages_actions = np.zeros((episode_length, len(self.id_from_actions)))
         advantages_space = np.zeros((episode_length, 4096))
 
         for i in range(episode_length):
-            advantages_actions[i][memory.actions[i]] = discounted_rewards[i] - values[i]
-            advantages_space[i][memory.points[i]]= discounted_rewards[i] - values[i]
-        self.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space], nb_epoch=1, verbose=0,callbacks=[history])
+            advantages_actions[i][self.id_from_actions[ memory.actions[i]]] = discounted_rewards[i] - values[i]
+            advantages_space[i][self.id_from_actions[ memory.actions[i]]]= discounted_rewards[i] - values[i]
+        with tf.Graph().as_default():
+            self.agent.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space], nb_epoch=1, verbose=0,callbacks=[history])
         return history.losses[0]
 
   
