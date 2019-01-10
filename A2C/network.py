@@ -10,7 +10,7 @@ from collections import deque
 import keras
 from keras import backend as K
 from keras.models import Sequential
-from keras.layers import Dense,Conv1D,Conv2D,Dropout,Flatten,Activation,MaxPool1D,MaxPooling2D,Lambda
+from keras.layers import Dense,Conv1D,Conv2D,Dropout,Flatten,Activation,MaxPool1D,MaxPooling2D,Lambda, ConvLSTM2D, TimeDistributed
 from keras.optimizers import Adam, RMSprop
 
 class FullyConv:
@@ -71,13 +71,11 @@ class FullyConv:
         intermediate = Flatten()(concat)
         intermediate = keras.layers.Dense(256, activation='relu', kernel_initializer="he_uniform")(intermediate)
 
-        # LSTM
-        intermediate_lstm = keras.layers.LSTM(units=512, activation='relu', return_sequences=True)(intermediate)
-        out_value = keras.layers.Dense(1)(intermediate_lstm)
+        out_value = keras.layers.Dense(1)(intermediate)
         out_value = Activation('linear', name='value_output')(out_value)
 
         out_non_spatial = keras.layers.Dense(len(self.categorical_actions)+len(self.spatial_actions), kernel_initializer="he_uniform",
-                                             kernel_regularizer=entropy_reg)(intermediate_lstm)
+                                             kernel_regularizer=entropy_reg)(intermediate)
         out_non_spatial = Lambda(lambda x: self.expl_rate * x)(out_non_spatial)
         out_non_spatial = Activation('softmax', name='non_spatial_output')(out_non_spatial)
 
@@ -141,59 +139,62 @@ class FullyConvLSTM:
         def entropy_reg(weight_matrix):
             """Entropy regularization to promote exploration"""
             return - self.eta * K.sum(weight_matrix * K.log(weight_matrix))
+        cnn_map = Sequential()
+        cnn_map.add(Conv2D(16, kernel_size=(5,5), data_format='channels_first', input_shape=(17,64,64), kernel_initializer='he_uniform'))
+        cnn_map.add(Activation('relu'))
+        cnn_map.add(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first'))
+        model_view_map= Sequential()
+        model_view_map.add(TimeDistributed(cnn_map))
 
         # map conv
         input_map = keras.layers.Input(shape=(17, 64, 64), name='input_map')
-        model_view_map = Conv2D(16, kernel_size=(5, 5), data_format='channels_first', input_shape=(17, 64, 64),
-                                kernel_initializer="he_uniform")(input_map)
+        model_view_map = TimeDistributed(Conv2D(16, kernel_size=(5, 5), data_format='channels_first', input_shape=(17, 64, 64),kernel_initializer="he_uniform"))(input_map)
+        model_view_map = TimeDistributed(Activation('relu'))(model_view_map)
+        model_view_map = TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first'))(
+            model_view_map)
+        """model_view_map = Conv2D(32, kernel_size=(3, 3), data_format='channels_first', kernel_initializer="he_uniform")(
+            model_view_map)
         model_view_map = Activation('relu')(model_view_map)
         model_view_map = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first')(
-            model_view_map)
-        model_view_map = Conv2D(32, kernel_size=(3, 3), data_format='channels_first', kernel_initializer="he_uniform")(
-            model_view_map)
-        model_view_map = Activation('relu')(model_view_map)
-        model_view_map = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first')(
-            model_view_map)
+            model_view_map)"""
+        model_view_map = ConvLSTM2D(filters=32, kernel_size=(3,3), strides=1, activation='relu')(model_view_map)
 
         # minimap conv
         input_mini = keras.layers.Input(shape=(7, 64, 64), name='input_mini')
-        model_view_mini = Conv2D(16, kernel_size=(5, 5), data_format='channels_first', input_shape=(7, 64, 64),
-                                 kernel_initializer="he_uniform")(input_mini)
+        model_view_mini = TimeDistributed(Conv2D(16, kernel_size=(5, 5), data_format='channels_first', input_shape=(7, 64, 64),
+                                 kernel_initializer="he_uniform"))(input_mini)
+        model_view_mini = TimeDistributed(Activation('relu'))(model_view_mini)
+        model_view_mini = TimeDistributed(MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first'))(
+            model_view_mini)
+        """model_view_mini = Conv2D(32, kernel_size=(3, 3), data_format='channels_first', kernel_initializer="he_uniform")(
+            model_view_mini)
         model_view_mini = Activation('relu')(model_view_mini)
         model_view_mini = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first')(
-            model_view_mini)
-        model_view_mini = Conv2D(32, kernel_size=(3, 3), data_format='channels_first', kernel_initializer="he_uniform")(
-            model_view_mini)
-        model_view_mini = Activation('relu')(model_view_mini)
-        model_view_mini = MaxPooling2D(pool_size=(2, 2), strides=None, padding='valid', data_format='channels_first')(
-            model_view_mini)
+            model_view_mini)"""
+        model_view_mini = ConvLSTM2D(filters=32, kernel_size=(3,3), strides=1, activation='relu')(model_view_mini)
 
         # concatenate
-        concat = keras.layers.concatenate([model_view_map, model_view_mini])
+        concat = TimeDistributed(keras.layers.concatenate([model_view_map, model_view_mini]))
 
         # value estimate and Action policy
-        intermediate = Flatten()(concat)
-        intermediate = keras.layers.Dense(256, activation='relu', kernel_initializer="he_uniform")(intermediate)
+        intermediate = TimeDistributed(Flatten())(concat)
+        intermediate = TimeDistributed(keras.layers.Dense(256, activation='relu', kernel_initializer="he_uniform"))(intermediate)
 
-        #LSTM for non-spatial policy and value function
-        intermediate_lstm = keras.layers.LSTM(units=512, activation='relu', kernel_initalizer="he_uniform",
-                                              return_sequences=True)(intermediate)
+        out_value = TimeDistributed(keras.layers.Dense(1))(intermediate)
+        out_value = TimeDistributed(Activation('linear', name='value_output'))(out_value)
 
-        out_value = keras.layers.Dense(1)(intermediate_lstm)
-        out_value = Activation('linear', name='value_output')(out_value)
-
-        out_non_spatial = keras.layers.Dense(len(self.categorical_actions) + len(self.spatial_actions),
+        out_non_spatial = TimeDistributed(keras.layers.Dense(len(self.categorical_actions) + len(self.spatial_actions),
                                              kernel_initializer="he_uniform",
-                                             kernel_regularizer=entropy_reg)(intermediate_lstm)
-        out_non_spatial = Lambda(lambda x: self.expl_rate * x)(out_non_spatial)
-        out_non_spatial = Activation('softmax', name='non_spatial_output')(out_non_spatial)
+                                             kernel_regularizer=entropy_reg))(intermediate)
+        out_non_spatial = TimeDistributed(Lambda(lambda x: self.expl_rate * x))(out_non_spatial)
+        out_non_spatial = TimeDistributed(Activation('softmax', name='non_spatial_output'))(out_non_spatial)
 
         # spatial policy output
-        out_spatial = Conv2D(1, kernel_size=(1, 1), data_format='channels_first', kernel_initializer="he_uniform",
-                             name='out_spatial')(concat)
-        out_spatial = Flatten()(out_spatial)
-        out_spatial = Dense(4096, activation='softmax', kernel_initializer="he_uniform")(out_spatial)
-        out_spatial = Activation('softmax', name='spatial_output')(out_spatial)
+        out_spatial = TimeDistributed(Conv2D(1, kernel_size=(1, 1), data_format='channels_first', kernel_initializer="he_uniform",
+                             name='out_spatial'))(concat)
+        out_spatial = TimeDistributed(Flatten())(out_spatial)
+        out_spatial = TimeDistributed(Dense(4096, activation='softmax', kernel_initializer="he_uniform"))(out_spatial)
+        out_spatial = TimeDistributed(Activation('softmax', name='spatial_output'))(out_spatial)
 
         # compile
         model = keras.models.Model(inputs=[input_map, input_mini], outputs=[out_value, out_non_spatial, out_spatial])

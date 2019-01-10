@@ -17,7 +17,7 @@ import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from A2C.a2c_agent import A2CAgent
-from A2C.network import FullyConv
+from A2C.network import FullyConv, FullyConvLSTM
 from A2C.utils import get_state, get_action
 
 _AI_RELATIVE = features.SCREEN_FEATURES.player_relative.index
@@ -68,7 +68,7 @@ eta = 0.1
 expl_rate = 0.1
 
 #initialize model object
-model = FullyConv(eta, expl_rate, categorical_actions,spatial_actions)
+model = FullyConvLSTM(eta, expl_rate, categorical_actions,spatial_actions)
 
 #initalize Agent
 agent = A2CAgent(model, categorical_actions,spatial_actions, id_from_actions,action_from_id)
