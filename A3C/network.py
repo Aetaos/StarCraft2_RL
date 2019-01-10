@@ -88,7 +88,7 @@ class FullyConv:
 
         # compile
         model = keras.models.Model(inputs=[input_map, input_mini], outputs=[out_value, out_non_spatial, out_spatial])
-        model.summary()
+        #model.summary()
         losses = {
             "value_output": "mse",
             "non_spatial_output": "categorical_crossentropy",
@@ -109,12 +109,15 @@ class FullyConv:
 
     def fit(self, *args, **kwargs):
         """wrapper for keras model fit function"""
-        return self.model.fit(*args, **kwargs)
+        with self.graph.as_default():
+            return self.model.fit(*args, **kwargs)
 
     def load_weights(self, *args, **kwargs):
         """wrapper for keras model load_weights function"""
-        return self.model.load_weights(*args, **kwargs)
+        with self.graph.as_default():
+            return self.model.load_weights(*args, **kwargs)
 
     def save_weights(self, *args, **kwargs):
         """wrapper for keras model save_weights function"""
-        return self.model.save_weights(*args, **kwargs)
+        with self.graph.as_default():
+            return self.model.save_weights(*args, **kwargs)

@@ -79,7 +79,7 @@ FLAGS(['run_sc2'])
 viz = False
 save_replay = False
 steps_per_episode = 0 # 0 actually means unlimited
-MAX_EPISODES =100
+MAX_EPISODES =5000
 MAX_STEPS = 400
 steps = 0
 
@@ -96,7 +96,7 @@ with sc2_env.SC2Env(agent_race=None,
             feature_dimensions=sc2_env.Dimensions(
                 screen=64,
                 minimap=64))) as env:
-    # agent.load("./save/move_2_beacon-dqn.h5")
+    #agent.load("./save/move_2_beacon-dqn.h5")
 
     done = False
     # batch_size = 5

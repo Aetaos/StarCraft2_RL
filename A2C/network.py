@@ -71,11 +71,13 @@ class FullyConv:
         intermediate = Flatten()(concat)
         intermediate = keras.layers.Dense(256, activation='relu', kernel_initializer="he_uniform")(intermediate)
 
-        out_value = keras.layers.Dense(1)(intermediate)
+        # LSTM
+        intermediate_lstm = keras.layers.LSTM(units=512, activation='relu', return_sequences=True)(intermediate)
+        out_value = keras.layers.Dense(1)(intermediate_lstm)
         out_value = Activation('linear', name='value_output')(out_value)
 
         out_non_spatial = keras.layers.Dense(len(self.categorical_actions)+len(self.spatial_actions), kernel_initializer="he_uniform",
-                                             kernel_regularizer=entropy_reg)(intermediate)
+                                             kernel_regularizer=entropy_reg)(intermediate_lstm)
         out_non_spatial = Lambda(lambda x: self.expl_rate * x)(out_non_spatial)
         out_non_spatial = Activation('softmax', name='non_spatial_output')(out_non_spatial)
 
