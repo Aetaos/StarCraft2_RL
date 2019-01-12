@@ -36,11 +36,11 @@ class A2CAgent:
         if self.epsilon > 0.05:
             self.epsilon = 0.99 * self.epsilon
 
-    
-   
+
+
     def act(self, state, init=False):
         policy = (self.model.predict(state)[1]).flatten()
-        
+
         if init or np.random.random() < self.epsilon:
             return self.action_from_id[np.random.choice(len(self.action_from_id), 1)[0]],np.random.randint(4096)
         else:

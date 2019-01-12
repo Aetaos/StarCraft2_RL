@@ -3,12 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import multiprocessing
 import tensorflow as tf
-import keras 
+import keras
 
 from queue import Queue
 from worker import Worker
 from utils import generate_env
-from actor_crtitic_model import A2CAgent
+from actor_critic_model import A2CAgent
 from network import FullyConv
 
 #to do generate a proper env in a separate file
@@ -48,7 +48,7 @@ class MasterAgent():
         MAX_EPISODES =100
         MAX_STEPS = 400
         steps = 0
-        
+
         # create a map
         beacon_map = maps.get('MoveToBeacon')
 
@@ -62,10 +62,10 @@ class MasterAgent():
                 feature_dimensions=sc2_env.Dimensions(
                     screen=64,
                     minimap=64))) as env:
-""" 
-            
+"""
+
         #self.env = generate_env(beacon_map)
-        
+
         #TODO adapt state and action sizes to pysc2 env
         #self.state_size = env.observation_space.shape[0]
         #self.action_size = env.action_space.n
@@ -92,28 +92,28 @@ class MasterAgent():
         for ix,k in enumerate(self.categorical_actions):
             self.id_from_actions[k]=ix+len(self.spatial_actions)
             self.action_from_id[ix+len(self.spatial_actions)] = k
-        
-        
+
+
         #initialize NN model hyperparameters
         self.eta = 0.1
         self.expl_rate = 0.2
-        
+
         #initialize model object
         self.global_model = FullyConv(self.eta, self.expl_rate, self.categorical_actions,self.spatial_actions)
-        
+
         #initalize Agent
         self.agent = A2CAgent(self.global_model, self.categorical_actions,self.spatial_actions, self.id_from_actions,self.action_from_id)
 
-        
+
         #self.global_model(tf.convert_to_tensor(np.random.random((1, self.state_size)), dtype=tf.float32))
 
     def train(self):
         #TODO replace with pysc2 random agent
         try:
-            
-        
+
+
             res_queue = Queue()
-    
+
             workers = [Worker(self.categorical_actions,
                  self.spatial_actions,
                  self.global_model,
@@ -123,11 +123,11 @@ class MasterAgent():
                  ) for i in range(1)]
             #in range(multiprocessing.cpu_count())]
             print ("running on", multiprocessing.cpu_count(), "core on Romain 's war machine")
-    
+
             for i, worker in enumerate(workers):
                 print("Starting worker {}".format(i))
                 worker.start()
-    
+
             moving_average_rewards = []  # record episode reward to plot
             while True:
                 reward = res_queue.get()
@@ -136,7 +136,7 @@ class MasterAgent():
                 else:
                     break
             [w.join() for w in workers]
-    
+
             plt.plot(moving_average_rewards)
             plt.ylabel('Moving average ep reward')
             plt.xlabel('Step')
@@ -176,4 +176,3 @@ class MasterAgent():
 if __name__ == "__main__":
     master = MasterAgent()
     master.train()
-    
