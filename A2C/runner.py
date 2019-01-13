@@ -110,7 +110,7 @@ with sc2_env.SC2Env(agent_race=None,
             init = False
             if e == 0 and time == 0:
                 init = True
-            a,point = agent.act(state, init)
+            a, point = agent.act(state, init)
             if not a in obs[0].observation.available_actions:
                 a = _NO_OP
             func = get_action(a, point)

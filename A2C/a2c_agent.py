@@ -54,7 +54,7 @@ class A2CAgent:
             return self.action_from_id[np.random.choice(len(self.action_from_id), 1)[0]],np.random.randint(4096)
         else:
             preds=self.model.predict(state)
-            return self.action_from_id[np.random.choice(len(self.action_from_id),1,p=preds[1][0])[0]],np.random.choice(4096, 1, p=preds[2][0])[0]
+            return self.action_from_id[np.random.choice(len(self.action_from_id),1,p=preds[1][0])[0]], np.random.choice(4096, 1, p=preds[2][0])[0]
 
     def train(self):
         episode_length = len(self.states)
@@ -87,7 +87,7 @@ class A2CAgent:
             advantages_space[i][self.points[i]]= discounted_rewards[i] - values[i]
         self.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space], nb_epoch=1, verbose=0)
 
-        self.states, self.actions, self.rewards = [], [], []
+        self.states, self.actions, self.rewards, self.points = [], [], [], []
 
         self.update_epsilon()
 

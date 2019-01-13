@@ -1,3 +1,9 @@
 \.ipynb_checkpoints\
 \__pycache__\*
 \.DS_Store
+
+A2C/__pycache__/
+
+\.idea/
+
+A2C/save/
