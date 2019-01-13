@@ -81,6 +81,7 @@ class A2CAgent:
         advantages_actions = np.zeros((episode_length, len(self.id_from_actions)))
         advantages_space = np.zeros((episode_length, 4096))
 
+        # compute advantages for each state
         for i in range(episode_length):
             advantages_actions[i][self.actions[i]] = discounted_rewards[i] - values[i]
             advantages_space[i][self.points[i]]= discounted_rewards[i] - values[i]
