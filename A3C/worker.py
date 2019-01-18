@@ -3,6 +3,7 @@ import os
 import numpy as np
 import tensorflow as tf
 import keras
+import keras.backend as K
 
 from actor_crtitic_model import A2CAgent
 from network import FullyConv
@@ -194,12 +195,15 @@ class Worker(threading.Thread):
                                                        self.agent.gamma)
                 self.ep_loss += total_loss
                 # Calculate local gradients
-                grads = tape.gradient(total_loss, self.agent.model.trainable_weights)
+                #print(total_loss)
+                #print(self.agent.model.get_weights())
+                print (self.agent.model.get_trainable_weights())
+                grads = tape.gradient(total_loss, self.agent.model.get_trainable_weights())
                 # Push local gradients to global model
                 self.opt.apply_gradients(zip(grads,
-                                             self.global_model.trainable_weights))
+                                             self.global_model.get_trainable_weights()))
                 # Update local model with new weights
-                self.agent.model.set_weights(self.global_model.get_weights())
+                #self.agent.model.set_weights(session.run(self.global_model.get_weights()))
 
                 #mem.clear()
                 #time_count = 0
@@ -260,8 +264,8 @@ class Worker(threading.Thread):
             advantages_space[i][self.id_from_actions[ memory.actions[i]]]= discounted_rewards[i] - values[i]
         with tf.Graph().as_default():
             self.agent.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space], nb_epoch=1, verbose=0,callbacks=[history])
-        return history.losses[0]
-
+        #return history.losses[0]
+        return self.agent.model.get_loss()
   
         
         
