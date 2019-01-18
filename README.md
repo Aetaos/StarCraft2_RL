@@ -1,4 +1,4 @@
-# Deep Reinforcement Learning : algorithms implementation for StarCraft 2
+# Deep Reinforcement Learning for StarCraft 2
 
 Project for the Reinforcement Learning class of A. Lazaric, MVA, Ecole Normale Supérieure
 
