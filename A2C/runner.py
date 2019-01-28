@@ -1,17 +1,8 @@
-import math
-import numpy as np
-from pysc2.agents import base_agent
 from pysc2.lib import actions
 from pysc2.lib import features
 from pysc2.env import sc2_env, run_loop, available_actions_printer
 from pysc2 import maps
 from absl import flags
-from collections import deque
-import keras
-from keras import backend as K
-from keras.models import Sequential
-from keras.layers import Dense,Conv1D,Conv2D,Dropout,Flatten,Activation,MaxPool1D,MaxPooling2D,Lambda
-from keras.optimizers import Adam, RMSprop
 
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))

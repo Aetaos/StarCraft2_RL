@@ -1,17 +1,12 @@
 import math
 import numpy as np
-from pysc2.agents import base_agent
-from pysc2.lib import actions
-from pysc2.lib import features
-from pysc2.env import sc2_env, run_loop, available_actions_printer
-from pysc2 import maps
-from absl import flags
-from collections import deque
 import keras
 from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense,Conv1D,Conv2D,Dropout,Flatten,Activation,MaxPool1D,MaxPooling2D,Lambda
 from keras.optimizers import Adam, RMSprop
+
+LOSS_V = .5
 
 class FullyConv:
     """This class implements the fullyconv agent network from DeepMind paper
@@ -34,9 +29,27 @@ class FullyConv:
     def initialize_layers(self, eta, expl_rate):
         """Initializes the keras model"""
 
-        def entropy_reg(weight_matrix):
-            """Entropy regularization to promote exploration"""
-            return - self.eta * K.sum(weight_matrix * K.log(weight_matrix))
+        """def entropy_reg(weight_matrix):
+            #Entropy regularization to promote exploration
+            return - self.eta * K.sum(weight_matrix * K.log(weight_matrix))"""
+        #value input
+        actual_value = keras.Input(shape=(1,), name='actual_value')
+		
+		
+        def value_loss():
+            def val_loss(y_true, y_pred):
+                advantage = y_true - y_pred
+                return K.mean(LOSS_V * K.square(advantage))
+            return val_loss
+
+		
+        def policy_loss(actual_value, predicted_value):
+            advantage = actual_value - predicted_value
+
+            def pol_loss(y_true, y_pred):
+                log_prob = K.log(K.sum(y_pred * y_true, axis=1, keepdims=True) + 1e-10)
+                return -log_prob * K.stop_gradient(advantage)
+            return pol_loss
 
         # map conv
         input_map = keras.layers.Input(shape=(17, 64, 64), name='input_map')
@@ -75,8 +88,8 @@ class FullyConv:
         out_value = keras.layers.Dense(1)(intermediate)
         out_value = Activation('linear', name='value_output')(out_value)
 
-        out_non_spatial = keras.layers.Dense(len(self.categorical_actions)+len(self.spatial_actions), kernel_initializer="he_uniform",
-                                             kernel_regularizer=entropy_reg)(intermediate)
+        out_non_spatial = keras.layers.Dense(len(self.categorical_actions)+len(self.spatial_actions), kernel_initializer="he_uniform"
+                                             )(intermediate)
         out_non_spatial = Lambda(lambda x: self.expl_rate * x)(out_non_spatial)
         out_non_spatial = Activation('softmax', name='non_spatial_output')(out_non_spatial)
 
@@ -87,15 +100,16 @@ class FullyConv:
         out_spatial = Activation('softmax', name='spatial_output')(out_spatial)
 
         # compile
-        model = keras.models.Model(inputs=[input_map, input_mini], outputs=[out_value, out_non_spatial, out_spatial])
+        model = keras.models.Model(inputs=[input_map, input_mini,actual_value], outputs=[out_value, out_non_spatial, out_spatial, actual_value])
         model.summary()
         losses = {
-            "value_output": "mse",
-            "non_spatial_output": "categorical_crossentropy",
-            "spatial_output": "categorical_crossentropy"
+            "value_output": value_loss(),
+            "non_spatial_output": policy_loss(actual_value=actual_value, predicted_value=out_value),
+            "spatial_output": policy_loss(actual_value=actual_value, predicted_value=out_value),
+            'actual_value': 'mae'
         }
 
-        lossWeights = {"value_output": 1.0, "non_spatial_output": 1.0, "spatial_output": 1.0}
+        lossWeights = {"value_output": 1.0, "non_spatial_output": 1.0, "spatial_output": 1.0,"actual_value":1.0}
         model.compile(loss=losses, loss_weights=lossWeights, optimizer=RMSprop(lr=0.1))
         self.model = model
 
