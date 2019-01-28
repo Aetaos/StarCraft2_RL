@@ -83,7 +83,7 @@ class A2CAgent:
         for i in range(episode_length):
             advantages_actions[i][self.actions[i]] = discounted_rewards[i] - values[i]
             advantages_space[i][self.points[i]]= discounted_rewards[i] - values[i]
-        self.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space], nb_epoch=1, verbose=0)
+        self.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space], epochs=1, verbose=0)
 
         self.states, self.actions, self.rewards = [], [], []
 
