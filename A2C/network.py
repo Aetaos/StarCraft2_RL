@@ -29,9 +29,6 @@ class FullyConv:
     def initialize_layers(self, eta, expl_rate):
         """Initializes the keras model"""
 
-        """def entropy_reg(weight_matrix):
-            #Entropy regularization to promote exploration
-            return - self.eta * K.sum(weight_matrix * K.log(weight_matrix))"""
         #value input
         actual_value = keras.layers.Input(shape=(1,), name='actual__value')
 		
