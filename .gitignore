@@ -4,6 +4,6 @@
 
 \.idea/
 
-A2C/__pycache__/
+*/__pycache__/
 
-A2C/save/
+*/save/
