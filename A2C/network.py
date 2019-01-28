@@ -33,7 +33,7 @@ class FullyConv:
             #Entropy regularization to promote exploration
             return - self.eta * K.sum(weight_matrix * K.log(weight_matrix))"""
         #value input
-        actual_value = keras.Input(shape=(1,), name='actual_value')
+        actual_value = keras.layers.Input(shape=(1,), name='actual__value')
 		
 		
         def value_loss():
@@ -100,16 +100,19 @@ class FullyConv:
         out_spatial = Activation('softmax', name='spatial_output')(out_spatial)
 
         # compile
-        model = keras.models.Model(inputs=[input_map, input_mini,actual_value], outputs=[out_value, out_non_spatial, out_spatial, actual_value])
+        model = keras.models.Model(inputs=[input_map, input_mini,actual_value], outputs=[out_value, out_non_spatial, out_spatial])
         model.summary()
         losses = {
             "value_output": value_loss(),
             "non_spatial_output": policy_loss(actual_value=actual_value, predicted_value=out_value),
-            "spatial_output": policy_loss(actual_value=actual_value, predicted_value=out_value),
-            'actual_value': 'mae'
+            "spatial_output": policy_loss(actual_value=actual_value, predicted_value=out_value)#,
+            #'actual__value': 'mae'
         }
 
-        lossWeights = {"value_output": 1.0, "non_spatial_output": 1.0, "spatial_output": 1.0,"actual_value":1.0}
+        lossWeights = {"value_output": 1.0, "non_spatial_output": 1.0, "spatial_output": 1.0
+            #,
+                       #"actual__value":1.0
+                       }
         model.compile(loss=losses, loss_weights=lossWeights, optimizer=RMSprop(lr=0.1))
         self.model = model
 

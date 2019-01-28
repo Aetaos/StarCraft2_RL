@@ -69,20 +69,21 @@ class A2CAgent:
         for i in range(episode_length):
             update_inputs[0][i, :, :, :] = self.states[i][0][0, :, :, :]
             update_inputs[1][i, :, :, :] = self.states[i][1][0, :, :, :]
-        
-        r = np.vstack(self.reward)
-	
-        
+
+        r = np.vstack(self.rewards)
+        update_inputs.append(np.zeros((episode_length, 1)))
+
+
         values = self.model.predict(update_inputs)[0]
         r = r + self.gamma * values
-        update_inputs.append(r)
+        update_inputs[2]=r
         advantages_actions = np.zeros((episode_length, len(self.id_from_actions)))
         advantages_space = np.zeros((episode_length, 4096))
 
         for i in range(episode_length):
             advantages_actions[i][self.actions[i]] = discounted_rewards[i] - values[i]
             advantages_space[i][self.points[i]]= discounted_rewards[i] - values[i]
-        self.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space,r], nb_epoch=1, verbose=0)
+        self.model.fit(update_inputs, [discounted_rewards, advantages_actions,advantages_space], nb_epoch=1, verbose=0)
 
         self.states, self.actions, self.rewards = [], [], []
 
