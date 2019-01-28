@@ -14,6 +14,8 @@ class A2CAgent:
         self.rewards = []
         self.actions = []
         self.points = []
+        #self.policy_predictions=[]
+        #self.spatial_predictions=[]
         self.gamma = 0.95  # discount rate
         self.categorical_actions = categorical_actions
         self.spatial_actions = spatial_actions
@@ -26,7 +28,7 @@ class A2CAgent:
         if self.epsilon > 0.1:
             self.epsilon = 0.999 * self.epsilon
 
-    def append_sample(self, state, action, reward,point):
+    def append_sample(self, state, action, reward,point,predictions):
         self.states.append(state)
         self.rewards.append(reward)
         self.actions.append(self.id_from_actions[action])
