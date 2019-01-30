@@ -8,7 +8,7 @@ from keras.optimizers import Adam, RMSprop
 
 LOSS_V = .5
 LOSS_CLIPPING = 0.2
-ENTROPY_LOSS = 1e-3
+ENTROPY_LOSS = 1e-2
 
 class FullyConv:
     """This class implements the fullyconv agent network from DeepMind paper

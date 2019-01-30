@@ -102,6 +102,8 @@ with sc2_env.SC2Env(agent_race=None,
             if e == 0 and time == 0:
                 init = True
             a,point,preds = agent.act(state, init)
+            print(a, point)
+
             if not a in obs[0].observation.available_actions:
                 a = _NO_OP
             func = get_action(a, point)

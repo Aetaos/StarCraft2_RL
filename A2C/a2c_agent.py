@@ -28,7 +28,7 @@ class A2CAgent:
         if self.epsilon > 0.1:
             self.epsilon = 0.999 * self.epsilon
 
-    def append_sample(self, state, action, reward,point,predictions):
+    def append_sample(self, state, action, reward,point):
         self.states.append(state)
         self.rewards.append(reward)
         self.actions.append(self.id_from_actions[action])
