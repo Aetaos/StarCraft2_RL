@@ -4,6 +4,9 @@
 
 \.idea/
 
+* linguist-vendored
+*.py linguist-vendored=false
+
 */__pycache__/
 
 */save/
