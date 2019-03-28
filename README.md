@@ -2,6 +2,6 @@
 
 Project for the Reinforcement Learning class of A. Lazaric, MVA, Ecole Normale Supérieure
 
-Read the related paper [here](https://drive.google.com/open?id=18S0oO0iI67z9DjJMkMW8U48MvjKyL652)
+Read the related paper [here](https://github.com/Aetaos/StarCraft2_RL/blob/master/Deep%20Reinforcement%20Learning%20for%20Starcraft%20II%20-%20OYates_RRouvillois_LMutricy_RGhorayeb.pdf)
 
 **Authors:** R. Ghorayeb, L. Mutricy, R. Rouvillois, O. Yates
